@@ -4,7 +4,7 @@ import sys
 
 PROBS = {
 
-    # Unconditional probabilities for having gene
+    # Probabilidades incondicionais de ter gene
     "gene": {
         2: 0.01,
         1: 0.03,
@@ -13,19 +13,19 @@ PROBS = {
 
     "trait": {
 
-        # Probability of trait given two copies of gene
+        # Probabilidade de característica dada duas cópias do gene
         2: {
             True: 0.65,
             False: 0.35
         },
 
-        # Probability of trait given one copy of gene
+        # Probabilidade de característica dada uma cópia do gene
         1: {
             True: 0.56,
             False: 0.44
         },
 
-        # Probability of trait given no gene
+        # Probabilidade de característica dada nenhuma cópia do gene
         0: {
             True: 0.01,
             False: 0.99
@@ -36,15 +36,21 @@ PROBS = {
     "mutation": 0.01
 }
 
+#Carregar os dados do arquivo.
+#Testar todas as combinações possíveis de quem pode ter 0, 1 ou 2 cópias do gene e quem pode ter o traço.
+#Calcular a probabilidade conjunta para cada configuração.
+#Atualizar as probabilidades de cada pessoa.
+#Normalizar as probabilidades para garantir que somam 1.
+#Exibir os resultados.
+
 
 def main():
 
-    # Check for proper usage
     if len(sys.argv) != 2:
         sys.exit("Usage: python heredity.py data.csv")
     people = load_data(sys.argv[1])
 
-    # Keep track of gene and trait probabilities for each person
+    # Acompanhe as probabilidades genéticas e características de cada pessoa
     probabilities = {
         person: {
             "gene": {
@@ -60,11 +66,11 @@ def main():
         for person in people
     }
 
-    # Loop over all sets of people who might have the trait
+    # Passe por todos os grupos de pessoas que possam ter a característica
     names = set(people)
     for have_trait in powerset(names):
 
-        # Check if current set of people violates known information
+        # Verifique se o conjunto atual de pessoas viola informações conhecidas
         fails_evidence = any(
             (people[person]["trait"] is not None and
              people[person]["trait"] != (person in have_trait))
@@ -73,15 +79,15 @@ def main():
         if fails_evidence:
             continue
 
-        # Loop over all sets of people who might have the gene
+        # Faça um loop sobre todos os grupos de pessoas que possam ter o gene
         for one_gene in powerset(names):
             for two_genes in powerset(names - one_gene):
 
-                # Update probabilities with new joint probability
+                # Atualizar probabilidades com nova probabilidade conjunta
                 p = joint_probability(people, one_gene, two_genes, have_trait)
                 update(probabilities, one_gene, two_genes, have_trait, p)
 
-    # Ensure probabilities sum to 1
+    # Certifique-se de que as probabilidades somam 1
     normalize(probabilities)
 
     # Print results
@@ -96,10 +102,10 @@ def main():
 
 def load_data(filename):
     """
-    Load gene and trait data from a file into a dictionary.
-    File assumed to be a CSV containing fields name, mother, father, trait.
-    mother, father must both be blank, or both be valid names in the CSV.
-    trait should be 0 or 1 if trait is known, blank otherwise.
+    Carregue dados de genes e características de um arquivo em um dicionário.
+    Arquivo assumido como um CSV contendo os campos nome, mãe, pai, característica.
+    mãe, pai devem estar em branco ou ambos devem ser nomes válidos no CSV.
+    trait deve ser 0 ou 1 se trait for conhecido; caso contrário, em branco.
     """
     data = dict()
     with open(filename) as f:
@@ -118,7 +124,8 @@ def load_data(filename):
 
 def powerset(s):
     """
-    Return a list of all possible subsets of set s.
+    Retorne uma lista de todos os subconjuntos possíveis do conjunto s.
+    gera combinações das pessoas que possuem a caracteristica com as que possuem um ou dois genes
     """
     s = list(s)
     return [
@@ -138,14 +145,16 @@ def parents_prob(parent, two_genes, one_gene):
 
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
-    Compute and return a joint probability.
+    Calcule e retorne uma probabilidade conjunta.
 
-    The probability returned should be the probability that
-        * everyone in set `one_gene` has one copy of the gene, and
-        * everyone in set `two_genes` has two copies of the gene, and
-        * everyone not in `one_gene` or `two_gene` does not have the gene, and
-        * everyone in set `have_trait` has the trait, and
-        * everyone not in set` have_trait` does not have the trait.
+    A probabilidade retornada deve ser a probabilidade de que
+        * todos no conjunto `one_gene` possuem uma cópia do gene, e
+        * todos no conjunto `two_genes` possuem duas cópias do gene, e
+        * todos que não estão em `one_gene` ou `two_gene` não possuem o gene, e
+        * todos no conjunto `have_trait` possuem a característica, e
+        * todos que não estão no set` have_trait` não possuem a característica.
+
+
     """
     probability = 1
     
@@ -181,10 +190,10 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
     """
-    Add to `probabilities` a new joint probability `p`.
-    Each person should have their "gene" and "trait" distributions updated.
-    Which value for each distribution is updated depends on whether
-    the person is in `have_gene` and `have_trait`, respectively.
+    Adicione às `probabilidades` uma nova probabilidade conjunta `p`.
+    Cada pessoa deve ter suas distribuições de “genes” e “características” atualizadas.
+    Qual valor para cada distribuição é atualizado depende se
+    a pessoa está em `have_gene` e `have_trait`, respectivamente.
     """
     for person in probabilities:
         if person in two_genes:
@@ -203,8 +212,8 @@ def update(probabilities, one_gene, two_genes, have_trait, p):
 
 def normalize(probabilities):
     """
-    Update `probabilities` such that each probability distribution
-    is normalized (i.e., sums to 1, with relative proportions the same).
+    Atualize as `probabilidades` de modo que cada distribuição de probabilidade
+    é normalizado (ou seja, soma 1, com proporções relativas iguais).
     """
     for person in probabilities:
         gene_total= sum(probabilities[person]["gene"].values())

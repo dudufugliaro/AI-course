@@ -23,13 +23,13 @@ def main():
 
 def crawl(directory):
     """
-    Parse a directory of HTML pages and check for links to other pages.
-    Return a dictionary where each key is a page, and values are
-    a list of all other pages in the corpus that are linked to by the page.
+    Analise um diretório de páginas HTML e verifique links para outras páginas.
+    Retorne um dicionário onde cada chave é uma página e os valores são
+    uma lista de todas as outras páginas do corpus vinculadas pela página.
     """
     pages = dict()
 
-    # Extract all links from HTML files
+    # Extraia todos os links de arquivos HTML
     for filename in os.listdir(directory):
         if not filename.endswith(".html"):
             continue
@@ -38,7 +38,7 @@ def crawl(directory):
             links = re.findall(r"<a\s+(?:[^>]*?)href=\"([^\"]*)\"", contents)
             pages[filename] = set(links) - {filename}
 
-    # Only include links to other pages in the corpus
+    # Incluir apenas links para outras páginas no corpus
     for filename in pages:
         pages[filename] = set(
             link for link in pages[filename]
@@ -71,7 +71,7 @@ def transition_model(corpus, page, damping_factor):
 
 def sample_pagerank(corpus, damping_factor, n):
     """
-    Retorna os valores de PageRank para cada página por meio de amostragem.
+    Retorna os valores ESTIMADOS de PageRank para cada página por meio de amostragem.
     """
     pagerank = {page: 0 for page in corpus}
     page = random.choice(list(corpus.keys()))
@@ -89,7 +89,7 @@ def sample_pagerank(corpus, damping_factor, n):
 
 def iterate_pagerank(corpus, damping_factor):
     """
-    Retorna os valores de PageRank calculados iterativamente.
+    Retorna os valores de PageRank calculados iterativamente ATE A CONVERGENCIA.
     """
     num_pages = len(corpus)
     pagerank = {page: 1 / num_pages for page in corpus}
