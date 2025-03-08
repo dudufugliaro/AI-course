@@ -16,9 +16,7 @@ class CrosswordCreator():
         }
 
     def letter_grid(self, assignment):
-        """
-        Return 2D array representing a given assignment.
-        """
+
         letters = [
             [None for _ in range(self.crossword.width)]
             for _ in range(self.crossword.height)
@@ -32,9 +30,6 @@ class CrosswordCreator():
         return letters
 
     def print(self, assignment):
-        """
-        Print crossword assignment to the terminal.
-        """
         letters = self.letter_grid(assignment)
         for i in range(self.crossword.height):
             for j in range(self.crossword.width):
@@ -45,9 +40,6 @@ class CrosswordCreator():
             print()
 
     def save(self, assignment, filename):
-        """
-        Save crossword assignment to an image file.
-        """
         from PIL import Image, ImageDraw, ImageFont
         cell_size = 100
         cell_border = 2
@@ -89,16 +81,13 @@ class CrosswordCreator():
         """
         Enforce node and arc consistency, and then solve the CSP.
         """
-        self.enforce_node_consistency()
-        self.ac3()
-        return self.backtrack(dict())
+        self.enforce_node_consistency() #remove as palavras do dominio que nao tem comprimento correto
+        self.ac3() #usa ac3 para garantir que as palavras que se cruzam tenham pelo menos um valor consistente
+        return self.backtrack(dict()) #usa o backtrack para atribuir palavras a cada variavel ate a solucao
 
     def enforce_node_consistency(self):
-        """
-        Update `self.domains` such that each variable is node-consistent.
-        (Remove any values that are inconsistent with a variable's unary
-         constraints; in this case, the length of the word.)
-        """
+        #percorre todas as variaveis do CSP, verifica se alguma palavra do dominio nao tem o tamanho correto
+        #remove as invalidas
         print("enforce node conssitency")
         for variable in self.domains:
             lenght = variable.length
@@ -109,14 +98,8 @@ class CrosswordCreator():
    
             
     def revise(self, x, y):
-        """
-        Make variable `x` arc consistent with variable `y`.
-        To do so, remove values from `self.domains[x]` for which there is no
-        possible corresponding value for `y` in `self.domains[y]`.
-
-        Return True if a revision was made to the domain of `x`; return
-        False if no revision was made.
-        """
+        #verifica se x e y tem sobreposicao, se tiverem, verifica se ha palavras em x que nunca 
+        #podem ser compativeis com y e as remove do dominio de x
         print("revise")
         if (x,y) not in self.crossword.overlaps:
             return False
@@ -150,14 +133,7 @@ class CrosswordCreator():
         
 
     def ac3(self, arcs=None):
-        """
-        Update `self.domains` such that each variable is arc consistent.
-        If `arcs` is None, begin with initial list of all arcs in the problem.
-        Otherwise, use `arcs` as the initial list of arcs to make consistent.
-
-        Return True if arc consistency is enforced and no domains are empty;
-        return False if one or more domains end up empty.
-        """
+        #se arcs nao for passado, cria uma fila de pares (x,y), com sobreposicao
         print("ac3")
         if arcs is not None:
             queue = deque(arcs)
@@ -168,25 +144,22 @@ class CrosswordCreator():
                 for y in self.domains:
                     if x != y and self.crossword.overlaps.get((x, y)) is not None:
                         queue.append((x, y))
-
+        #para cada par(x,y) chama revise(x,y), que pode reduzir o dominio de x
         while queue:
             x, y = queue.popleft()
             if self.revise(x, y):
                 if not self.domains[x]:
-                    return False  
+                    return False  #dominio vazio
 
-                
+                #se revise(x,y) remove valores, adiciona (z,x) para verificar os vizinhos
                 for z in self.crossword.neighbors(x):
                     if z != y:  
                         queue.append((z, x))
 
-        return True
+        return True #consistencia aplicada e nenhum dominio vazio
 
     def assignment_complete(self, assignment):
-        """
-        Return True if `assignment` is complete (i.e., assigns a value to each
-        crossword variable); return False otherwise.
-        """
+        #retorna true se todas as variaveis tem uma palavra atribuida
         print("assignment compleete")
         for var in self.crossword.variables:
             if var not in assignment:
@@ -196,10 +169,7 @@ class CrosswordCreator():
         return True
 
     def consistent(self, assignment):
-        """
-        Return True if `assignment` is consistent (i.e., words fit in crossword
-        puzzle without conflicting characters); return False otherwise.
-        """
+        #verifica se a atribuicao esta correta
         used_words = set()
         print("consistetn")
         for var, word in assignment.items():
@@ -224,58 +194,56 @@ class CrosswordCreator():
         return True
 
     def order_domain_values(self, var, assignment):
-        """
-        Return a list of values in the domain of `var`, in order by
-        the number of values they rule out for neighboring variables.
-        The first value in the list, for example, should be the one
-        that rules out the fewest values among the neighbors of `var`.
-        """
-        elim_count = {}  
 
-        for value in self.domains[var]:
-            count = 0
-            for neighbor in self.crossword.neighbors(var):
-                if neighbor not in assignment:
-                    count += sum(1 for n_value in self.domains[neighbor] if not self.consistent({var: value, neighbor: n_value}))
-            
-            elim_count[value] = count  
+        #Retorna uma lista de valores no domínio de `var`, ordenados pelo número de valores que eles eliminam 
+        #para variáveis vizinhas ainda não atribuídas.
+        #O primeiro valor da lista deve ser aquele que elimina o menor número de opções para os vizinhos.
 
-        return sorted(self.domains[var], key=lambda v: elim_count[v])
+        elim_count = {}  # Dicionário para armazenar a contagem de eliminações para cada valor no domínio de `var`
+
+        for value in self.domains[var]:  # Para cada palavra possível no domínio da variável `var`
+            count = 0  # Conta quantas palavras serão eliminadas dos domínios dos vizinhos
+            for neighbor in self.crossword.neighbors(var):  # Percorre os vizinhos da variável
+                if neighbor not in assignment:  # Apenas considera vizinhos ainda não atribuídos
+                    count += sum(1 for n_value in self.domains[neighbor] 
+                                if not self.consistent({var: value, neighbor: n_value}))
+
+            elim_count[value] = count  # Associa a palavra ao número de valores eliminados nos vizinhos
+
+        return sorted(self.domains[var], key=lambda v: elim_count[v])  
+        # Ordena os valores com base no número de eliminações (menor primeiro)
+
         
     def select_unassigned_variable(self, assignment):
         """
-        Return an unassigned variable not already part of `assignment`.
-        Choose the variable with the minimum number of remaining values
-        in its domain. If there is a tie, choose the variable with the highest
-        degree. If there is a tie, any of the tied variables are acceptable
-        return values.
+        Retorna uma variável não atribuída que ainda não está em `assignment`.
+        Escolhe a variável com:
+        1. O menor número de valores restantes em seu domínio.
+        2. Em caso de empate, a variável com o maior número de vizinhos.
+        3. Se ainda houver empate, qualquer uma das empatadas pode ser escolhida.
         """
         print("select unasigned variables")
-        unassigned = [v for v in self.crossword.variables if v not in assignment]
+        unassigned = [v for v in self.crossword.variables if v not in assignment]  # Lista de variáveis não atribuídas
         if not unassigned:
-            return None
+            return None  # Se não houver mais variáveis, retorna None (todos já foram atribuídos)
         
         sorted_variables = []
         for v in unassigned:
-            num_values = len(self.domains[v])
+            num_values = len(self.domains[v])  # Quantidade de valores no domínio da variável
+            num_neighbors = len(self.crossword.neighbors(v))  # Quantidade de vizinhos no grafo do problema
+            
+            sorted_variables.append((v, num_values, num_neighbors))  # Armazena a variável com suas métricas
         
-            num_neighbors = len(self.crossword.neighbors(v))
+        sorted_variables.sort(key=lambda x: (x[1], -x[2]))  # Ordena por: menos valores no domínio e mais vizinhos
         
-            sorted_variables.append((v,num_values,num_neighbors))
-        
-        sorted_variables.sort(key=lambda x: (x[1], -x[2]))
-    
-        return sorted_variables[0][0]    
+        return sorted_variables[0][0]  # Retorna a variável com menor domínio e mais vizinhos (se houver empate)
+
 
     def backtrack(self, assignment):
-        """
-        Using Backtracking Search, take as input a partial assignment for the
-        crossword and return a complete assignment if possible to do so.
-
-        `assignment` is a mapping from variables (keys) to words (values).
-
-        If no assignment is possible, return None.
-        """
+    # Se a atribuição está completa, retorna a solução.
+    # Escolhe uma variável e tenta atribuir um valor.
+    # Se a atribuição é consistente, chama backtrack() recursivamente.
+    # Se não encontrar solução, desfaz a escolha (backtracking).
         print("backtrack")
         if len(assignment) == len(self.crossword.variables):
             return assignment
